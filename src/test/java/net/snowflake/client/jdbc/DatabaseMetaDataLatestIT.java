@@ -242,6 +242,34 @@ public class DatabaseMetaDataLatestIT extends BaseJDBCTest {
     }
   }
 
+  @Test
+  @ConditionalIgnoreRule.ConditionalIgnore(condition = RunningOnGithubAction.class)
+  public void testDoubleQuotesforGetPrimaryKeysAndForeignKeys() throws SQLException {
+    try (Connection con = getConnection()) {
+      Statement statement = con.createStatement();
+      // Create a database with double quotes inside the database name
+      statement.execute("create or replace database \"dbwith\"\"quotes\"");
+      // Create a schema name with double quotes inside the schema name
+      statement.execute("create or replace schema \"dbwith\"\"quotes\".\"schemawith\"\"quotes\"");
+      // Create a table with a primary key constraint
+      statement.execute(
+          "create or replace table \"dbwith\"\"quotes\".\"schemawith\"\"quotes\".\"test1\"  (col1 integer not null, col2 integer not null, constraint pkey_1 primary key (col1, col2) not enforced)");
+      // Create a table with a foreign key constraint that points to same columns as test1's primary
+      // key constraint
+      statement.execute(
+          "create or replace table \"dbwith\"\"quotes\".\"schemawith\"\"quotes\".\"test2\" (col_a integer not null, col_b integer not null, constraint fkey_1 foreign key (col_a, col_b) references \"test1\" (col1, col2) not enforced)");
+      DatabaseMetaData metaData = con.getMetaData();
+      ResultSet rs = metaData.getPrimaryKeys("dbwith\"quotes", "schemawith\"quotes", null);
+      // Assert 1 row is returned for primary key constraint for table and schema with quotes
+      assertEquals(1, getSizeOfResultSet(rs));
+      rs = metaData.getImportedKeys("dbwith\"quotes", "schemawith\"quotes", null);
+      // Assert 2 rows are returned for foreign key constraint
+      assertEquals(2, getSizeOfResultSet(rs));
+      rs.close();
+      statement.close();
+    }
+  }
+
   /**
    * This tests that wildcards can be used for the schema name for getProcedureColumns().
    * Previously, only empty resultsets were returned.

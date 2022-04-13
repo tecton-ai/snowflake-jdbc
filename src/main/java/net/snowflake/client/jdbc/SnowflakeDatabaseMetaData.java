@@ -1429,17 +1429,16 @@ public class SnowflakeDatabaseMetaData implements DatabaseMetaData {
     } else if (catalog.isEmpty()) {
       return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_TABLES, statement);
     } else {
+      String catalogUnescaped = unescapeChars(catalog);
       // if the schema pattern is a deterministic identifier, specify schema
       // in the show command. This is necessary for us to see any tables in
       // a schema if the current schema a user is connected to is different
       // given that we don't support show tables without a known schema.
       if (schemaPattern == null || isSchemaNameWildcardPattern(schemaPattern)) {
-        String catalogUnescaped = unescapeChars(catalog);
         showCommand += " in database \"" + catalogUnescaped + "\"";
       } else if (schemaPattern.isEmpty()) {
         return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_TABLES, statement);
       } else {
-        String catalogUnescaped = unescapeChars(catalog);
         String schemaUnescaped = unescapeChars(schemaPattern);
         showCommand += " in schema \"" + catalogUnescaped + "\".\"" + schemaUnescaped + "\"";
       }
@@ -1970,17 +1969,27 @@ public class SnowflakeDatabaseMetaData implements DatabaseMetaData {
     } else if (catalog.isEmpty()) {
       return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_PRIMARY_KEYS, statement);
     } else {
+      String catalogUnescaped = unescapeChars(catalog);
       if (schema == null) {
-        showPKCommand += "database \"" + catalog + "\"";
+        showPKCommand += "database \"" + catalogUnescaped + "\"";
       } else if (schema.isEmpty()) {
         return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_PRIMARY_KEYS, statement);
       } else {
+        String schemaUnescaped = unescapeChars(schema);
         if (table == null) {
-          showPKCommand += "schema \"" + catalog + "\".\"" + schema + "\"";
+          showPKCommand += "schema \"" + catalogUnescaped + "\".\"" + schemaUnescaped + "\"";
         } else if (table.isEmpty()) {
           return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_PRIMARY_KEYS, statement);
         } else {
-          showPKCommand += "table \"" + catalog + "\".\"" + schema + "\".\"" + table + "\"";
+          String tableUnescaped = unescapeChars(table);
+          showPKCommand +=
+              "table \""
+                  + catalogUnescaped
+                  + "\".\""
+                  + schemaUnescaped
+                  + "\".\""
+                  + tableUnescaped
+                  + "\"";
         }
       }
     }
@@ -2074,18 +2083,28 @@ public class SnowflakeDatabaseMetaData implements DatabaseMetaData {
     } else if (parentCatalog.isEmpty()) {
       return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_FOREIGN_KEYS, statement);
     } else {
+      String unescapedParentCatalog = unescapeChars(parentCatalog);
       if (parentSchema == null) {
-        commandBuilder.append("database \"" + parentCatalog + "\"");
+        commandBuilder.append("database \"" + unescapedParentCatalog + "\"");
       } else if (parentSchema.isEmpty()) {
         return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_FOREIGN_KEYS, statement);
       } else {
+        String unescapedParentSchema = unescapeChars(parentSchema);
         if (parentTable == null) {
-          commandBuilder.append("schema \"" + parentCatalog + "\".\"" + parentSchema + "\"");
+          commandBuilder.append(
+              "schema \"" + unescapedParentCatalog + "\".\"" + unescapedParentSchema + "\"");
         } else if (parentTable.isEmpty()) {
           return SnowflakeDatabaseMetaDataResultSet.getEmptyResultSet(GET_FOREIGN_KEYS, statement);
         } else {
+          String unescapedParentTable = unescapeChars(parentTable);
           commandBuilder.append(
-              "table \"" + parentCatalog + "\".\"" + parentSchema + "\".\"" + parentTable + "\"");
+              "table \""
+                  + unescapedParentCatalog
+                  + "\".\""
+                  + unescapedParentSchema
+                  + "\".\""
+                  + unescapedParentTable
+                  + "\"");
         }
       }
     }
